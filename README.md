@@ -6,14 +6,23 @@ What is Arkime?
 Arkime is an open-source, large-scale, full-packet capture and indexing system that enables users to capture and store PCAP data efficiently. It works with Elasticsearch for storing and searching metadata.
 
 Prerequisites
-	1.	Hardware Requirements:
-	•	CPU: At least 4 cores.
-	•	RAM: 16 GB or more.
-	•	Storage: Minimum of 500 GB (depending on expected PCAP storage needs).
-	2.	Software Requirements:
-	•	Supported OS: Ubuntu (20.04 or higher) or CentOS (7/8).
-	•	Elasticsearch: Version 7.x (compatible with Arkime).
-	•	Arkime: Latest version from the official repository.
+1.	Hardware Requirements:
+	
+  	•	CPU: At least 4 cores.
+
+ 	•	RAM: 16 GB or more.
+
+ 	•	Storage: Minimum of 500 GB (depending on expected PCAP storage needs).
+
+ 
+ 2.	Software Requirements:
+
+ 	•	Supported OS: Ubuntu (20.04 or higher) or CentOS (7/8).
+
+ 	•	Elasticsearch: Version 7.x (compatible with Arkime).
+
+ 	•	Arkime: Latest version from the official repository.
+
 	•	Packet capture tool: tcpdump or Arkime’s built-in capture engine.
 
 Step 1: Install Elasticsearch
