@@ -1,218 +1,142 @@
 # Network-Packet-Indexer
 Project capturing Pcaps using the tool Arkime and implementing Elastic Search.
 
-What is Arkime?
 
-Arkime is an open-source, large-scale, full-packet capture and indexing system that enables users to capture and store PCAP data efficiently. It works with Elasticsearch for storing and searching metadata.
+Installing & Configuring Arkime (Moloch) for PCAP Analysis
 
-Prerequisites
-1.	Hardware Requirements:
+1. Purpose & Overview
+
+Arkime is a scalable PCAP capture and analysis platform.
+
+Uses Elasticsearch as its search database.
+
+Allows indexing and searching across multiple PCAPs.
+
+2. Server Setup
+
+Ubuntu 22.04 server with 8GB RAM & 50GB disk.
+
+Update and upgrade system:
+
+
+	sudo apt-get update && sudo apt-get upgrade
+
+
+3. Install Arkime
+
+Download Arkime package for Ubuntu (matching CPU architecture) via wget.
+
+Install:
+
+	sudo dpkg -i <arkime_package>
+
+Fix missing dependencies:
+
+	sudo apt-get -f install
+
+4. Configure Arkime:
+
+Run:
+
+	sudo /opt/arkime/bin/configure
+
+
+Choose network interface (e.g., ens33).
+
+For demo, install local Elasticsearch.
+
+Set admin password and enable MaxMind geoip download (requires account).
+
+Save setup instructions from Step 4 in Notepad.
+
+5. Start Services
+
+		sudo systemctl start elasticsearch.service
+		sudo /opt/arkime/db/db.pl http://localhost:9200 init
+		sudo /opt/arkime/bin/arkime_add_user <username> "<description>" <password> --admin
+		sudo systemctl start arkimecapture.service
+		sudo systemctl start arkimeviewer.service
+
+6. Access Web Interface
+
+URL: http://<arkime_server_ip>:8005
+
+Login with created admin account.
+
+Explore:
+
+Sessions → View indexed traffic.
+
+SPI View → Protocol breakdown.
+
+Connections → Graph view.
+
+Hunt → Create scheduled searches.
+
+Integrating MaxMind GeoIP:
+
+Create MaxMind account → Generate license key.
+
+Install geoip update tool:
+
+
+	sudo apt install geoipupdate
+
+
+	Edit /etc/GeoIP.conf with account ID, license key, and edition IDs (GeoLite2-ASN, GeoLite2-Country, GeoLite2-City).
+
+Run:
+
+
+	sudo geoipupdate
 	
-  	•	CPU: At least 4 cores.
+ 	sudo systemctl restart arkimecapture.service
 
- 	•	RAM: 16 GB or more.
+Ingesting PCAPs
 
- 	•	Storage: Minimum of 500 GB (depending on expected PCAP storage needs).
 
- 
- 2.	Software Requirements:
+Download malicious PCAP from malware-traffic-analysis.net.
 
- 	•	Supported OS: Ubuntu (20.04 or higher) or CentOS (7/8).
+Unzip with password infected_2024 (example).
 
- 	•	Elasticsearch: Version 7.x (compatible with Arkime).
+Create pcaps directory, move file there.
 
- 	•	Arkime: Latest version from the official repository.
+Ingest:
 
-	•	Packet capture tool: tcpdump or Arkime’s built-in capture engine.
 
-Step 1: Install Elasticsearch
 
-1.1 Download and Install Elasticsearch
+	sudo /opt/arkime/bin/capture --copy -MR .
+
+Adjust time filter in Arkime UI to match PCAP capture date.
+
+Analyzing Traffic
+Sort by Bytes to find largest sessions.
+
+Expand sessions to view HTTP, DNS, or raw packet data.
+
+Filter by IP, domain, or protocol.
+
+Export PCAPs for deeper analysis in Wireshark.
+
+Adding Context OSINT Module
+
+
+Configure Context:
+
+
+	sudo /opt/arkime/bin/configure
+
+Select Context.
+
+Edit /opt/arkime/etc/context.ini:
+
+Set http://localhost:9200 as Elasticsearch URL.
+
+Add random passwordSecret.
+
+Ensure port 3218 is uncommented.
+
+Restart:
 	
-1.	Add the Elasticsearch GPG key:
-	
-		wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+ 	sudo systemctl restart arkimecontext.service
 
-
-2.	Install the apt-transport-https package:
-
-		sudo apt-get install apt-transport-https
-
-
-3.	Add the Elasticsearch repository:
-
-		echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
-
-
-4.	Update the package index and install Elasticsearch:
-
-		sudo apt update
-		sudo apt install elasticsearch
-
-
-1.2 Configure Elasticsearch
-	
-1.	Open the Elasticsearch configuration file:
-
-		sudo nano /etc/elasticsearch/elasticsearch.yml
-
-
-2.	Configure the following:
-	
- •	Set the cluster name:
-
-cluster.name: arkime-cluster
-
-
-•	Set the network host:
-
-network.host: 0.0.0.0
-
-
-•	Ensure Elasticsearch is accessible only from the Arkime host or secure it with a firewall.
-
-3.	Save and close the file.
-	
-4.	Start and enable Elasticsearch:
-
-		sudo systemctl start elasticsearch
-
-		sudo systemctl enable elasticsearch
-
-
-5.	Test the installation:
-
-		curl -X GET "http://localhost:9200"
-
-Step 2: Install Arkime
-
-2.1 Download and Install Arkime
-
-1.	Download the latest version of Arkime:
-
-		wget https://s3.amazonaws.com/files.molo.ch/builds/arkime_3.4.0-1_amd64.deb
-
-
-2.	Install the downloaded package:
-
-		sudo dpkg -i arkime_3.4.0-1_amd64.deb
-
-
-
-2.2 Configure Arkime
-	
- 1.	Run the setup script:
-
-		sudo /opt/arkime/bin/Configure
-
-•	Follow the prompts to configure:
-•	Elasticsearch URL: http://localhost:9200
-•	Admin user credentials (for Arkime web interface).
-•	Network interfaces for packet capture (e.g., eth0).
-
-2.	Verify the configuration file:
-
-		sudo nano /opt/arkime/etc/config.ini
-
-Key configurations:
-	
-•	Elasticsearch URL:
-
-elasticsearch: http://localhost:9200
-
-
-•	Capture directory for PCAPs:
-
-		pcapDir=/data/pcap
-
-
-•	Interface to capture packets:
-
-		interface=eth0
-
-
-3.	Create the PCAP storage directory:
-
-		sudo mkdir -p /data/pcap
-
-		sudo chown -R $USER:$USER /data/pcap
-
-Step 3: Start Services
-	
- 1.	Start the Arkime capture service:
-
-		sudo systemctl start arkimecapture
-
-
-2.	Start the Arkime viewer service (web interface):
-
-		sudo systemctl start arkimeviewer
-
-
-3.	Enable both services to start on boot:
-
-		sudo systemctl enable arkimecapture
-
-		sudo systemctl enable arkimeviewer
-
-Step 4: Access Arkime Web Interface
-	
- 1.	Open a browser and navigate to:
-
-		http://<your-server-ip>:8005
-
-
-2.	Log in with the admin credentials you set during configuration.
-	
-3.	Verify the PCAP data is being indexed and displayed in the Arkime interface.
-
-Step 5: Capture and Store PCAPs
-	
- 1.	Start Capturing:
-	
- •	Arkime automatically captures packets on the specified interface. To manually test:
-
-		sudo /opt/arkime/bin/capture -r /path/to/pcapfile.pcap
-
-
-•	Or use tcpdump to generate PCAPs:
-
-		sudo tcpdump -i eth0 -w /data/pcap/test.pcap
-
-
-2.	Search Captured Data:
-	
- •	Use the Arkime web interface to search and analyze the captured packets.
-
- •	Filters include source/destination IP, protocol, or payload content.
-
-Step 6: Verify Elasticsearch Integration
-	
- 1.	In the Elasticsearch database, confirm Arkime metadata is indexed:
-
-		curl -X GET "http://localhost:9200/_cat/indices?v"
-
-You should see indices like sessions2-*.
-
-	
- 2.	Use Arkime’s advanced search features to query indexed PCAP data.
-
-Step 7: Customize and Optimize
-	
- 1.	Retention Policy:
-	
- •	Set up a retention policy to delete old data:
-
-		rotateIndex=7
-
-(Deletes indices older than 7 days.)
-
-	
- 2.	Dashboards:
-
- •	Use Arkime’s built-in dashboards for visualizing network data or export metadata to external tools for further analysis.
-
- 3.	Secure the Deployment:
-
- •	Use HTTPS for Arkime’s web interface and Elasticsearch.
-	•	Configure authentication and limit access to trusted IPs.
